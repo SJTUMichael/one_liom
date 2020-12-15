@@ -107,7 +107,7 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
 	{
 	    if(laserCloudScans[i].points[j].r==1)
 	    {
-		if(laserCloudScans[i].points[j].g>0.5) 
+		if(laserCloudScans[i].points[j].g>0.6) 
 		{
 		    laserCloudedge->push_back(laserCloudScans[i].points[j]);
 		    j=j+5;
