@@ -89,6 +89,7 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
     }
     
     //计算曲率
+    double pointNormCount = 0;
     for(int i=0;i<16;i++)
     {
 	for(int j=3;j<int(laserCloudScans[i].size())-3;j++)
@@ -96,9 +97,13 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
 	    float diffX = laserCloudScans[i].points[j - 3].x + laserCloudScans[i].points[j - 2].x + laserCloudScans[i].points[j - 1].x - 6 * laserCloudScans[i].points[j].x + laserCloudScans[i].points[j + 1].x + laserCloudScans[i].points[j + 2].x + laserCloudScans[i].points[j + 3].x;
 	    float diffY = laserCloudScans[i].points[j - 3].y + laserCloudScans[i].points[j - 2].y + laserCloudScans[i].points[j - 1].y - 6 * laserCloudScans[i].points[j].y + laserCloudScans[i].points[j + 1].y + laserCloudScans[i].points[j + 2].y + laserCloudScans[i].points[j + 3].y;
 	    float diffZ = laserCloudScans[i].points[j - 3].z + laserCloudScans[i].points[j - 2].z + laserCloudScans[i].points[j - 1].z - 6 * laserCloudScans[i].points[j].z + laserCloudScans[i].points[j + 1].z + laserCloudScans[i].points[j + 2].z + laserCloudScans[i].points[j + 3].z;
-	    laserCloudScans[i].points[j].g=double(diffX * diffX + diffY * diffY + diffZ * diffZ);
+	    float pointNorm = pow(laserCloudScans[i].points[j].x, 2) + pow(laserCloudScans[i].points[j].y, 2) + pow(laserCloudScans[i].points[j].z, 2);
+        laserCloudScans[i].points[j].g= sqrt( double(diffX * diffX + diffY * diffY + diffZ * diffZ) / (double)pointNorm );
+        pointNormCount += laserCloudScans[i].points[j].g;
 	}
     }
+
+    std::cout << pointNormCount/count << std::endl;
     
     //根据曲率获取edge点和plane点
     for(int i=0;i<16;i++)
@@ -108,7 +113,7 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
 	    if(laserCloudScans[i].points[j].r==1)
 	    {
 
-		if(laserCloudScans[i].points[j].g>0.8) 
+		if(laserCloudScans[i].points[j].g>0.2) 
 
 		{
 		    laserCloudedge->push_back(laserCloudScans[i].points[j]);
