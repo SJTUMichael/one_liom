@@ -18,7 +18,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
-#include<ceres/ceres.h>
+#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <eigen3/Eigen/Dense>
 
@@ -132,8 +132,9 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
     if(laserCloudIn_plane_last_num<10) laserCloudIn_plane_last=laserCloudIn_plane;
     else
     {
-     kdtreePlaneLast.setInputCloud (laserCloudIn_plane_last.makeShared());
-	 for(int optize_num=0;optize_num<=1;optize_num++)
+     //KD-tree https://blog.csdn.net/shuiyixin/article/details/88988069
+     kdtreePlaneLast.setInputCloud (laserCloudIn_plane_last.makeShared());  
+     for(int optize_num=0;optize_num<=1;optize_num++)
 	 {
 	    //优化问题构建
 	    ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
@@ -235,16 +236,16 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
     pcl::PointCloud<PointType>::Ptr laserCloud_map_curr(new pcl::PointCloud<PointType>());;
     for(int i=0;i<laserCloudIn_plane_num;i=i+10)
     {
-	PointType point_in_map;
-	TransformToMap(&laserCloudIn_plane.points[i],&point_in_map);
-	laserCloud_map_curr->push_back(point_in_map);
+        PointType point_in_map;
+        TransformToMap(&laserCloudIn_plane.points[i],&point_in_map);
+        laserCloud_map_curr->push_back(point_in_map);
     }
     
     //降采样，输出地图点
     pcl::PointCloud<PointType> laserCloud_map_filter;
     pcl::VoxelGrid<PointType> sor;
     sor.setInputCloud (laserCloud_map_curr);
-    sor.setLeafSize (0.2, 0.2, 0.2);
+    sor.setLeafSize (0.1, 0.1, 0.1);
     sor.filter (laserCloud_map_filter);
     
     *laserCloud_map+=laserCloud_map_filter;
