@@ -35,18 +35,19 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
     int count = cloudSize;
     PointType point;
     std::vector<pcl::PointCloud<PointType>> laserCloudScans(16);
+    //初始化四个点云指针
     pcl::PointCloud<PointType>::Ptr laserCloudground(new pcl::PointCloud<PointType>());
     pcl::PointCloud<PointType>::Ptr laserCloudedge(new pcl::PointCloud<PointType>());
     pcl::PointCloud<PointType>::Ptr laserCloudplane(new pcl::PointCloud<PointType>());
     pcl::PointCloud<PointType>::Ptr laserCloudall(new pcl::PointCloud<PointType>());
 	
-    //判定各点的线数
+    //判定各点的线数,并分别存储在laserCloudScans(16)中
     for (int i = 0; i < cloudSize; i++)
     {
         point.x = laserCloudIn.points[i].x;
         point.y = laserCloudIn.points[i].y;
         point.z = laserCloudIn.points[i].z;
-	point.r=1;
+	    point.r=1;
         float angle = atan(point.z / sqrt(point.x * point.x + point.y * point.y)) * 180 / M_PI;
         int scanID = 0;
 
@@ -60,7 +61,7 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
         laserCloudScans[scanID].push_back(point);
     }
     
-    //地面点获取
+    //地面点判断并记录为r=2
     for(int i=0;i<5;i++)
     {
 	for(int j=0;j<int(laserCloudScans[i].size())&&j<int(laserCloudScans[i+1].size());j++)
@@ -80,7 +81,7 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
 	}
     }
     
-    //计算曲率
+    //计算曲率存入g
     for(int i=0;i<16;i++)
     {
 	for(int j=3;j<int(laserCloudScans[i].size())-3;j++)
@@ -92,36 +93,38 @@ void cloud_Callhandle(const sensor_msgs::PointCloud2 ros_cloud)
 	}
     }
     
+    //laserCloudall相比于laserCloudIn多了rgb三个通道信息
     for (int i = 0; i < 16; i++)
     { 
         *laserCloudall += laserCloudScans[i];
     }
     
     long all_points_num = laserCloudall->points.size();
+    //分为30份处理,限制特征点数量
     for(int i=0;i<30;i++)
     {
-	long start_num = i*all_points_num/30;
-	long end_num = (i+1)*all_points_num/30;
-	for(long j=start_num;j<end_num;j++)
-	{
-	    if(laserCloudall->points[j].r==1)
-	    {
-		if(laserCloudall->points[j].g>0.2&&(int(laserCloudedge->points.size())<4*(i+1))) 
-		{
-		    laserCloudedge->push_back(laserCloudall->points[j]);
-		    j=j+5;
-		}
-		if(laserCloudall->points[j].g<0.05&&(int(laserCloudplane->points.size())<20*(i+1))) 
-		{
-		    laserCloudplane->push_back(laserCloudall->points[j]);
-		    j=j+5;
-		}
-	    }
-	    if((int(laserCloudplane->points.size())==20*(i+1))&&(int(laserCloudedge->points.size())==4*(i+1)))
-	    {
-		j=end_num;
-	    }
-	}
+        long start_num = i*all_points_num/30;
+        long end_num = (i+1)*all_points_num/30;
+        for(long j=start_num;j<end_num;j++)
+        {
+            if(laserCloudall->points[j].r==1)
+            {
+                if(laserCloudall->points[j].g>0.2&&(int(laserCloudedge->points.size())<4*(i+1))) 
+                {
+                    laserCloudedge->push_back(laserCloudall->points[j]);
+                    j=j+5;
+                }
+                if(laserCloudall->points[j].g<0.05&&(int(laserCloudplane->points.size())<20*(i+1))) 
+                {
+                    laserCloudplane->push_back(laserCloudall->points[j]);
+                    j=j+5;
+                }
+            }
+            if((int(laserCloudplane->points.size())==20*(i+1))&&(int(laserCloudedge->points.size())==4*(i+1)))
+            {
+                j=end_num;
+            }
+        }
     }
     
     //地面，棱，平面，全部点云输出

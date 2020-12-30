@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <time.h>
-#include<iostream>
+#include <iostream>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -297,11 +297,14 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 //表示我们的点跟着位姿走了，不和以前一样只在世界原点附近显示一圈就完了
 void cloud_all_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_all)
 {
-    pcl::PointCloud<PointType> laserCloudIn_all;
-    pcl::fromROSMsg(ros_cloud_all, laserCloudIn_all);
-    sensor_msgs::PointCloud2 laserCloudplaneMsg;
-    pcl::toROSMsg(laserCloudIn_all, laserCloudplaneMsg);
-    laserCloudplaneMsg.header.stamp = ros_cloud_all.header.stamp;
+    // pcl::PointCloud<PointType> laserCloudIn_all;
+    // pcl::fromROSMsg(ros_cloud_all, laserCloudIn_all);
+    // sensor_msgs::PointCloud2 laserCloudplaneMsg;
+    // pcl::toROSMsg(laserCloudIn_all, laserCloudplaneMsg);
+    // laserCloudplaneMsg.header.stamp = ros_cloud_all.header.stamp;
+    // laserCloudplaneMsg.header.frame_id = "map_child";
+
+    sensor_msgs::PointCloud2 laserCloudplaneMsg = ros_cloud_all;
     laserCloudplaneMsg.header.frame_id = "map_child";
     pubLaserCloudall_02.publish(laserCloudplaneMsg);
 }

@@ -14,13 +14,13 @@ find_package(catkin REQUIRED COMPONENTS
   rosbag
   std_msgs
   image_transport
-  cv_bridge
+  #cv_bridge
   tf
 )
 
 #find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
 
 include_directories(
@@ -28,7 +28,8 @@ include_directories(
 	${catkin_INCLUDE_DIRS} 
 	${PCL_INCLUDE_DIRS}
   ${CERES_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS})
+  #${OpenCV_INCLUDE_DIRS}
+  )
 
 catkin_package(
   CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs nav_msgs
