@@ -60,8 +60,9 @@ constexpr double NEARBY_SCAN = 2.5;
 //plane_norm为根据向量bc和bd求出的法向量
 struct CURVE_FITTING_COST
 {
+    //构造函数，给结构体内变量赋初值
   CURVE_FITTING_COST(Eigen::Vector3d _curr_point_a_, Eigen::Vector3d _last_point_b_,
-		     Eigen::Vector3d _last_point_c_, Eigen::Vector3d _last_point_d_):
+		             Eigen::Vector3d _last_point_c_, Eigen::Vector3d _last_point_d_):
 		     curr_point_a_(_curr_point_a_),last_point_b_(_last_point_b_),
 		     last_point_c_(_last_point_c_),last_point_d_(_last_point_d_)
 	{
@@ -210,9 +211,10 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 			    Eigen::Vector3d curr_point_d(laserCloudIn_plane_last.points[minPointInd3].x,
 							laserCloudIn_plane_last.points[minPointInd3].y,
 							laserCloudIn_plane_last.points[minPointInd3].z);
-			    problem.AddResidualBlock(new ceres::AutoDiffCostFunction<CURVE_FITTING_COST,1,4,3>
-						    (new CURVE_FITTING_COST(last_point_a,curr_point_b,
-						      curr_point_c,curr_point_d)),loss_function,para_q,para_t);
+			    problem.AddResidualBlock(new ceres::AutoDiffCostFunction<CURVE_FITTING_COST,1,4,3> //1,4,3 对应 参差，q,t
+						    (new CURVE_FITTING_COST(last_point_a,curr_point_b, curr_point_c,curr_point_d)),
+                            new ceres::CauchyLoss(0.5), // 减少离群点影响 nullptr换成new CauchyLoss(0.5)（0.5为参数）
+                            para_q, para_t);
 		    }
 		}
 	    }
