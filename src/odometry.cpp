@@ -213,8 +213,8 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 							laserCloudIn_plane_last.points[minPointInd3].z);
 			    problem.AddResidualBlock(new ceres::AutoDiffCostFunction<CURVE_FITTING_COST,1,4,3> //1,4,3 对应 参差，q,t
 						    (new CURVE_FITTING_COST(last_point_a,curr_point_b, curr_point_c,curr_point_d)),
-                            new ceres::CauchyLoss(0.5), // 减少离群点影响 nullptr换成new CauchyLoss(0.5)（0.5为参数）
-                            para_q, para_t);
+                            new ceres::CauchyLoss(0.5), // loss function减少离群点影响 nullptr换成new CauchyLoss(0.5)（0.5为参数）
+                            para_q, para_t);  //对应点匹配固定，无法像ICP一样迭代更改匹配点
 		    }
 		}
 	    }
