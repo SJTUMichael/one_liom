@@ -148,7 +148,7 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 	    //对于每个这一帧的点，也就是a点，进行寻找上一帧最近点b，并根据b点寻找c，d点进行点面距离估计，引入优化函数中
 	    for(int i=0;i<laserCloudIn_plane_num;i++)
 	    {
-		//构建一个KD树用的点，点id，点距离；将本次的a点转换到本帧下，并输入本帧全部点寻找最近点
+		//构建一个KD树用的点，点id，点距离；将本次的a点转换到上一帧下，并输入上一帧全部点寻找最近点
 		PointType pointseed;std::vector<int> pointSearchInd;std::vector<float> pointSearchSqDis;
 		TransformToStart(&laserCloudIn_plane.points[i],&pointseed);
 		kdtreePlaneLast.nearestKSearch(pointseed, 1, pointSearchInd, pointSearchSqDis);
@@ -162,36 +162,36 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 		    //向b点的线号往上寻找c点（可以同线号）
 		    for(int j=closestPointInd+2;(j<laserCloudIn_plane_last_num)&&(minPointInd2 == -1);j++)
 		    {
-			if(laserCloudIn_plane_last.points[j].b>closestPoint_scanID+NEARBY_SCAN) continue;
-			else
-			{
-			    double distance_a_c=(laserCloudIn_plane_last.points[j].x-pointseed.x)
-						*(laserCloudIn_plane_last.points[j].x-pointseed.x)
-						+(laserCloudIn_plane_last.points[j].y-pointseed.y)
-						*(laserCloudIn_plane_last.points[j].y-pointseed.y)
-						+(laserCloudIn_plane_last.points[j].z-pointseed.z)
-						*(laserCloudIn_plane_last.points[j].z-pointseed.z);
-			    if(distance_a_c>DISTANCE_SQ_THRESHOLD) continue;
-			    else minPointInd2=j;
-			}
+                if(laserCloudIn_plane_last.points[j].b>closestPoint_scanID+NEARBY_SCAN) continue;
+                else
+                {
+                    double distance_a_c=(laserCloudIn_plane_last.points[j].x-pointseed.x)
+                            *(laserCloudIn_plane_last.points[j].x-pointseed.x)
+                            +(laserCloudIn_plane_last.points[j].y-pointseed.y)
+                            *(laserCloudIn_plane_last.points[j].y-pointseed.y)
+                            +(laserCloudIn_plane_last.points[j].z-pointseed.z)
+                            *(laserCloudIn_plane_last.points[j].z-pointseed.z);
+                    if(distance_a_c>DISTANCE_SQ_THRESHOLD) continue;
+                    else minPointInd2=j;
+                }
 		    }
 		    
-		    //向b点的线号往下寻找d点（不可同线号）
+		    //向b点的线号往下寻找d点（不可同线号，b,c,d同线无法叉积）
 		    //这里不可同线号！在那个if的取并集来实现
 		    for(int j=closestPointInd-1;(j>0)&&(minPointInd3 == -1);j--)
 		    {
-			if((laserCloudIn_plane_last.points[j].b<closestPoint_scanID-NEARBY_SCAN)||(laserCloudIn_plane_last.points[j].b==closestPoint_scanID)) continue;
-			else
-			{
-			    double distance_a_d=(laserCloudIn_plane_last.points[j].x-pointseed.x)
-						*(laserCloudIn_plane_last.points[j].x-pointseed.x)
-						+(laserCloudIn_plane_last.points[j].y-pointseed.y)
-						*(laserCloudIn_plane_last.points[j].y-pointseed.y)
-						+(laserCloudIn_plane_last.points[j].z-pointseed.z)
-						*(laserCloudIn_plane_last.points[j].z-pointseed.z);
-			    if(distance_a_d>DISTANCE_SQ_THRESHOLD) continue;
-			    else minPointInd3=j;
-			}
+                if((laserCloudIn_plane_last.points[j].b<closestPoint_scanID-NEARBY_SCAN)||(laserCloudIn_plane_last.points[j].b==closestPoint_scanID)) continue;
+                else
+                {
+                    double distance_a_d=(laserCloudIn_plane_last.points[j].x-pointseed.x)
+                            *(laserCloudIn_plane_last.points[j].x-pointseed.x)
+                            +(laserCloudIn_plane_last.points[j].y-pointseed.y)
+                            *(laserCloudIn_plane_last.points[j].y-pointseed.y)
+                            +(laserCloudIn_plane_last.points[j].z-pointseed.z)
+                            *(laserCloudIn_plane_last.points[j].z-pointseed.z);
+                    if(distance_a_d>DISTANCE_SQ_THRESHOLD) continue;
+                    else minPointInd3=j;
+                }
 		    }
 		    
 		    //如果c，d都没找到，也就是id还是初始的-1就过；否则记录abcd点放入残差块中
@@ -229,32 +229,32 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 	 }
     }
     //优化后，当前帧变前帧，位姿累积，并且根据位姿变换当前帧所有点到世界坐标系，放入地图中
-    laserCloudIn_plane_last=laserCloudIn_plane;
+    laserCloudIn_plane_last = laserCloudIn_plane;
     t_w_curr = t_w_curr + q_w_curr * t_last_curr;
     q_w_curr = q_w_curr*q_last_curr ;
     
-    pcl::PointCloud<PointType>::Ptr laserCloud_map_curr(new pcl::PointCloud<PointType>());;
-    for(int i=0;i<laserCloudIn_plane_num;i=i+10)
-    {
-        PointType point_in_map;
-        TransformToMap(&laserCloudIn_plane.points[i],&point_in_map);
-        laserCloud_map_curr->push_back(point_in_map);
-    }
+    // pcl::PointCloud<PointType>::Ptr laserCloud_map_curr(new pcl::PointCloud<PointType>());
+    // for(int i=0; i<laserCloudIn_plane_num; ++i)
+    // {
+    //     PointType point_in_map;
+    //     TransformToMap(&laserCloudIn_plane.points[i],&point_in_map);
+    //     laserCloud_map_curr->push_back(point_in_map);
+    // }
     
-    //降采样，输出地图点
-    pcl::PointCloud<PointType> laserCloud_map_filter;
-    pcl::VoxelGrid<PointType> sor;
-    sor.setInputCloud (laserCloud_map_curr);
-    sor.setLeafSize (0.1, 0.1, 0.1);
-    sor.filter (laserCloud_map_filter);
+    // //降采样，输出地图点
+    // pcl::PointCloud<PointType> laserCloud_map_filter;
+    // pcl::VoxelGrid<PointType> sor;
+    // sor.setInputCloud (laserCloud_map_curr);
+    // sor.setLeafSize (0.1, 0.1, 0.1);
+    // sor.filter (laserCloud_map_filter);
     
-    *laserCloud_map+=laserCloud_map_filter;
+    // *laserCloud_map += laserCloud_map_filter;
     
-    sensor_msgs::PointCloud2 laserCloudMapMsg;
-    pcl::toROSMsg(*laserCloud_map, laserCloudMapMsg);
-    laserCloudMapMsg.header.stamp = ros_cloud_plane.header.stamp;
-    laserCloudMapMsg.header.frame_id = "map";
-    pubLaserCloud_map.publish(laserCloudMapMsg);
+    // sensor_msgs::PointCloud2 laserCloudMapMsg;
+    // pcl::toROSMsg(*laserCloud_map, laserCloudMapMsg);
+    // laserCloudMapMsg.header.stamp = ros_cloud_plane.header.stamp;
+    // laserCloudMapMsg.header.frame_id = "map";
+    // pubLaserCloud_map.publish(laserCloudMapMsg);
     
     //输出位姿和path
     nav_msgs::Odometry laserOdometry;
@@ -298,16 +298,43 @@ void cloud_plane_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_plane)
 //表示我们的点跟着位姿走了，不和以前一样只在世界原点附近显示一圈就完了
 void cloud_all_Callhandle(const sensor_msgs::PointCloud2 ros_cloud_all)
 {
-    // pcl::PointCloud<PointType> laserCloudIn_all;
-    // pcl::fromROSMsg(ros_cloud_all, laserCloudIn_all);
-    // sensor_msgs::PointCloud2 laserCloudplaneMsg;
-    // pcl::toROSMsg(laserCloudIn_all, laserCloudplaneMsg);
-    // laserCloudplaneMsg.header.stamp = ros_cloud_all.header.stamp;
-    // laserCloudplaneMsg.header.frame_id = "map_child";
+    pcl::PointCloud<PointType> laserCloudIn_all;
+    pcl::fromROSMsg(ros_cloud_all, laserCloudIn_all);
 
-    sensor_msgs::PointCloud2 laserCloudplaneMsg = ros_cloud_all;
+    //publish当前帧点云
+    sensor_msgs::PointCloud2 laserCloudplaneMsg;
+    pcl::toROSMsg(laserCloudIn_all, laserCloudplaneMsg);
+    laserCloudplaneMsg.header.stamp = ros_cloud_all.header.stamp;
     laserCloudplaneMsg.header.frame_id = "map_child";
     pubLaserCloudall_02.publish(laserCloudplaneMsg);
+
+    //坐标转换、体素滤波后加入到全局地图中（假设先定好了位姿！）
+    int laserCloud_all_num = laserCloudIn_all.points.size();
+    pcl::PointCloud<PointType>::Ptr laserCloud_map_curr(new pcl::PointCloud<PointType>());
+    for(int i=0; i<laserCloud_all_num; ++i)
+    {
+        PointType point_in_map;
+        TransformToMap(&laserCloudIn_all.points[i],&point_in_map);
+        laserCloud_map_curr->push_back(point_in_map);
+    }
+
+    *laserCloud_map += *laserCloud_map_curr;
+    
+    //降采样，输出地图点
+    pcl::PointCloud<PointType> laserCloud_map_filter;
+    pcl::VoxelGrid<PointType> sor;
+    sor.setInputCloud (laserCloud_map);
+    sor.setLeafSize (0.5, 0.5, 0.5);
+    sor.filter (laserCloud_map_filter);
+    
+    *laserCloud_map = laserCloud_map_filter;
+    
+    sensor_msgs::PointCloud2 laserCloudMapMsg;
+    pcl::toROSMsg(*laserCloud_map, laserCloudMapMsg);
+    laserCloudMapMsg.header.stamp = ros_cloud_all.header.stamp;
+    laserCloudMapMsg.header.frame_id = "map";
+    pubLaserCloud_map.publish(laserCloudMapMsg);
+   
 }
 
 int main(int argc, char **argv)
